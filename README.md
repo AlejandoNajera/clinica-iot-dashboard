@@ -25,4 +25,8 @@ La plataforma está completamente contenedorizada, lo que permite levantar todo 
    ```bash
    git clone [https://github.com/AlejandoNajera/clinica-iot-dashboard.git](https://github.com/AlejandoNajera/clinica-iot-dashboard.git)
    cd clinica-iot-dashboard
+
+   ## 📊 Vista Previa del Dashboard
+
+A continuación se muestra una captura de la interfaz de usuario en funcionamiento, desplegando las métricas críticas del inventario y la telemetría asíncrona de los sensores IoT:
 <img width="1919" height="866" alt="image" src="https://github.com/user-attachments/assets/08f684d4-b0ce-4bc8-9674-97bda072557d" />
