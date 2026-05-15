@@ -1,0 +1,40 @@
+# Control de versiones
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info
+.eggs
+dist/
+build/
+.venv
+venv/
+env/
+
+# Node
+frontend/node_modules
+frontend/dist
+frontend/.vite
+
+# Archivos de entorno locales
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Editor
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

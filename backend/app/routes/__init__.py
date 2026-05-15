@@ -1,0 +1,1 @@
+# Paquete de rutas — este archivo vacío convierte la carpeta en módulo Python.

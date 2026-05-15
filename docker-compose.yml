@@ -1,0 +1,112 @@
+# ═══════════════════════════════════════════════════════════════
+#  MedTrack — Plataforma de Gestión de Equipos Clínicos
+#  Docker Compose MVP
+#
+#  Servicios:
+#    db        → PostgreSQL 15
+#    backend   → FastAPI + Uvicorn
+#    frontend  → React (Vite build) + Nginx
+#    iot_mock  → Simulador ESP32
+#
+#  Uso:
+#    docker compose up --build          # Primera vez
+#    docker compose up -d               # En background
+#    docker compose down -v             # Detener y borrar volúmenes
+# ═══════════════════════════════════════════════════════════════
+
+services:
+
+  # ─────────────────────────────────────────
+  # BASE DE DATOS — PostgreSQL 15
+  # ─────────────────────────────────────────
+  db:
+    image: postgres:15-alpine
+    container_name: medtrack_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB:       ${POSTGRES_DB:-clinica_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"   # Expuesto para acceso con DBeaver/TablePlus
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-clinica_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - medtrack_net
+
+  # ─────────────────────────────────────────
+  # BACKEND — FastAPI
+  # ─────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: medtrack_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-clinica_db}
+    ports:
+      - "8000:8000"   # Swagger UI en http://localhost:8000/docs
+    depends_on:
+      db:
+        condition: service_healthy   # Espera a que Postgres esté listo
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+    networks:
+      - medtrack_net
+
+  # ─────────────────────────────────────────
+  # FRONTEND — React + Nginx
+  # ─────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: medtrack_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"       # Dashboard en http://localhost
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - medtrack_net
+
+  # ─────────────────────────────────────────
+  # IOT MOCK — Simulador ESP32
+  # ─────────────────────────────────────────
+  iot_mock:
+    build:
+      context: ./iot_mock
+      dockerfile: Dockerfile
+    container_name: medtrack_iot_mock
+    restart: unless-stopped
+    environment:
+      # Apunta al servicio "backend" dentro de la red Docker
+      API_BASE_URL:  http://backend:8000
+      INTERVALO_SEG: "8"    # Envía lecturas cada 8 segundos
+      CICLOS:        "0"    # 0 = loop infinito
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - medtrack_net
+
+# ─────────────────────────────────────────
+# VOLÚMENES Y REDES
+# ─────────────────────────────────────────
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  medtrack_net:
+    driver: bridge
